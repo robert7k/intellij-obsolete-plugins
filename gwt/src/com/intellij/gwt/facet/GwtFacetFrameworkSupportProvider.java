@@ -39,7 +39,6 @@ import com.intellij.ide.util.frameworkSupport.FrameworkSupportProvider;
 import com.intellij.ide.util.newProjectWizard.impl.FrameworkSupportModelBase;
 import com.intellij.ide.util.projectWizard.ModuleBuilder;
 import com.intellij.javaee.artifact.JavaeeArtifactUtil;
-import com.intellij.javaee.framework.JavaeeProjectCategory;
 import com.intellij.javaee.web.artifact.WebArtifactUtil;
 import com.intellij.javaee.web.facet.WebFacet;
 import com.intellij.openapi.module.JavaModuleType;
@@ -88,6 +87,8 @@ import java.util.Collections;
 import java.util.ResourceBundle;
 
 public final class GwtFacetFrameworkSupportProvider extends FrameworkSupportProvider {
+  // same id as com.intellij.javaee.framework.JavaeeProjectCategory.ROLE, which lives in an Ultimate-only module
+  private static final FrameworkRole JAVAEE_ROLE = new FrameworkRole("JavaEE");
   public GwtFacetFrameworkSupportProvider() {
     super(FacetBasedFrameworkSupportProvider.getProviderId(GwtFacetType.ID), GwtBundle.message("framework.title.google.web.toolkit"));
   }
@@ -124,7 +125,7 @@ public final class GwtFacetFrameworkSupportProvider extends FrameworkSupportProv
 
   @Override
   public FrameworkRole[] getRoles() {
-    return new FrameworkRole[]{JavaeeProjectCategory.ROLE};
+    return new FrameworkRole[]{JAVAEE_ROLE};
   }
 
   public static final class GwtFrameworkSupportConfigurable extends FrameworkSupportConfigurable {

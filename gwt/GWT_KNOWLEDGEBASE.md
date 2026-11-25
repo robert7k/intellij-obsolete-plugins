@@ -119,6 +119,22 @@ Open these first depending on the area:
   Spring-MVC controllers).
 - **Dev** content module: `dev/src/com/intellij/gwt/dev/psiViewer/GwtUiXmlPsiViewerExtension.java`
   (plugin-developer PSI Viewer aid).
+- **JavaEE** content module: `javaee/src/com/intellij/gwt/javaee/GwtJavaeeSampleApplicationRunConfigurator.java`
+  (application-server run configurations for the sample application, via the
+  `gwt.sampleApplicationRunConfigurator` EP).
+
+## 8a. Running without IntelliJ IDEA Ultimate
+
+The main module must not depend on anything that requires `com.intellij.modules.ultimate` (directly or
+transitively). In 2026.3 these are notably the plugins `com.intellij.javaee.web` (Web facet type,
+`WebUtil`/`WebArtifactUtil` services), `com.intellij.javaee.app.servers.integration` and
+`com.intellij.spring.mvc`, and the module `intellij.javaee.platform.impl`. The Web facet *API*
+(`com.intellij.javaee.web.*`, module `intellij.javaee.web` of the free `com.intellij.javaee` plugin) may
+be used, but without Ultimate no Web facets exist: guard service access with
+`GwtWebUtil.isWebFacetTypeAvailable()` / `GwtWebUtil.getWebArtifactUtil()`, and fall back to
+`GwtWebUtil.findDefaultWebRoots()` (`war/`, `src/main/webapp/`). Code that needs Ultimate-only classes
+goes into an optional content module (`javaee`, `spring`); the Gradle build only puts the Ultimate plugins
+on the test classpath (`testBundledPlugin`), so the compiler catches violations in the main module.
 
 ## 9. Extension points
 
@@ -130,6 +146,7 @@ Declared in `resources/META-INF/plugin.xml`, all `dynamic`:
 | `com.intellij.gwt.devModeServerProvider` | `run/GwtDevModeServerProvider` | pluggable dev-mode/code-server launch backends |
 | `com.intellij.gwt.unregisteredServletFilter` | `com.intellij.openapi.util.Condition` | exempt classes from the "servlet not registered" inspection |
 | `com.intellij.gwt.compileOutputRelativePathSuggester` | `packaging/GwtCompileOutputRelativePathSuggester` | where GWT output lands inside a WAR artifact |
+| `com.intellij.gwt.sampleApplicationRunConfigurator` | `facet/GwtSampleApplicationRunConfigurator` | extra run configurations/artifacts for a new sample application |
 
 ## 10. Key conventions
 
@@ -145,7 +162,7 @@ Declared in `resources/META-INF/plugin.xml`, all `dynamic`:
 
 - **Gradle build** (IntelliJ Platform Gradle Plugin 2.x). The root `build.gradle.kts` builds the plugin;
   `settings.gradle.kts` adds subprojects `jps-plugin` (the external build process, packaged as
-  `gwt-jps.jar`), `runtime` (small runtime jar), and the plugin **content modules** `spring` and `dev`.
+  `gwt-jps.jar`), `runtime` (small runtime jar), and the plugin **content modules** `spring`, `dev` and `javaee`.
   Platform version and language level live in `gradle.properties`. Build with `./gradlew buildPlugin`;
   `verifyPluginProjectConfiguration` validates the descriptor. Tests run from `test/` (JetBrains-only
   test bases are quarantined under `test-quarantined/` and excluded from compilation).

@@ -1,5 +1,6 @@
 package com.intellij.gwt.clientBundle.jam;
 
+import com.intellij.psi.PsiAnnotationMemberValue;
 import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.gwt.clientBundle.ClientBundleUtil;
 import com.intellij.jam.JamBaseElement;
@@ -9,8 +10,6 @@ import com.intellij.jam.reflect.JamAnnotationMeta;
 import com.intellij.jam.reflect.JamAttributeMeta;
 import com.intellij.jam.reflect.JamMethodMeta;
 import com.intellij.jam.reflect.JamStringAttributeMeta;
-import com.intellij.javaee.model.annotations.AnnotationGenericValue;
-import com.intellij.javaee.model.annotations.AnnotationModelUtil;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.util.Conditions;
 import com.intellij.openapi.util.io.FileUtilRt;
@@ -69,8 +68,8 @@ public final class ClientBundleMethodJamElement extends JamBaseElement<PsiMethod
             final PsiAnnotation annotation = AnnotationUtil.findAnnotationInHierarchy(resourceType, DEFAULT_EXTENSIONS_ANNOTATION_SET);
             final PsiDirectory directory = method.getContainingFile().getContainingDirectory();
             if (annotation != null && directory != null) {
-              for (AnnotationGenericValue<String> value : AnnotationModelUtil.getStringArrayValue(annotation, "value")) {
-                final String extension = value.getValue();
+              for (PsiAnnotationMemberValue value : AnnotationUtil.arrayAttributeValues(annotation.findAttributeValue("value"))) {
+                final String extension = AnnotationUtil.getStringAttributeValue(value);
                 if (extension != null) {
                   final PsiFile file = directory.findFile(method.getName() + extension);
                   if (file != null) {

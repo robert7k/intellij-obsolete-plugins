@@ -28,10 +28,11 @@ dependencies {
         bundledPlugin("JavaScript")
         bundledPlugin("com.intellij.css")
         bundledPlugin("com.intellij.java-i18n")
-        bundledPlugin("com.intellij.javaee.app.servers.integration")
-        bundledPlugin("com.intellij.javaee.web")
+        bundledPlugin("com.intellij.javaee")
         // org.jetbrains.debugger.sourcemap.* (was only reachable via com.intellij.modules.ultimate before)
         bundledModule("intellij.platform.scriptDebugger.backend")
+        // com.intellij.util.io.socketConnection.* (remote UI of the GWT dev mode)
+        bundledModule("intellij.platform.ide.socketConnection")
 
         // optional dependencies
         bundledPlugin("org.jetbrains.idea.maven")
@@ -42,12 +43,16 @@ dependencies {
         // plugin content modules
         pluginModule(project(":spring"))
         pluginModule(project(":dev"))
+        pluginModule(project(":javaee"))
 
         // additional plugins required for testing
         // (org.jetbrains.idea.maven is already provided by the bundledPlugin declaration above)
         testBundledPlugin("com.intellij.spring")
         testBundledPlugin("com.intellij.spring.mvc")
-        testBundledPlugin("com.intellij.javaee")
+        // Ultimate-only plugins: the main module must not depend on them (see the optional javaee content module),
+        // but the tests exercise the Web facet based features
+        testBundledPlugin("com.intellij.javaee.web")
+        testBundledPlugin("com.intellij.javaee.app.servers.integration")
 
         testFramework(TestFrameworkType.Platform)
         testFramework(TestFrameworkType.Plugin.Java)

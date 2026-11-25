@@ -1,5 +1,7 @@
 package com.intellij.gwt.maven;
 
+import com.intellij.facet.FacetType;
+import com.intellij.facet.FacetTypeRegistry;
 import com.intellij.gwt.facet.GwtFacet;
 import com.intellij.gwt.facet.GwtFacetArtifactValidator;
 import com.intellij.gwt.facet.GwtFacetConfiguration;
@@ -11,7 +13,6 @@ import com.intellij.gwt.packaging.GwtCompilerOutputElement;
 import com.intellij.gwt.sdk.GwtDependenciesStorage;
 import com.intellij.javaee.web.WebRoot;
 import com.intellij.javaee.web.facet.WebFacet;
-import com.intellij.javaee.web.facet.WebFacetType;
 import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.externalSystem.project.PackagingModifiableModel;
 import com.intellij.openapi.externalSystem.service.project.IdeModifiableModelsProvider;
@@ -154,7 +155,9 @@ public abstract class GwtFacetImporter extends FacetImporter<GwtFacet, GwtFacetC
         setupGwtSdk(facet, project);
         setupGwtCompilerOptions(facet.getConfiguration(), module, project);
 
-        WebFacet webFacet = findFacet(modelsProvider1.getModifiableFacetModel(module), WebFacetType.getInstance(), "Web");
+        // the Web facet type is provided by the Ultimate-only JavaEE Web plugin and may be absent
+        FacetType<WebFacet, ?> webFacetType = FacetTypeRegistry.getInstance().findFacetType(WebFacet.ID);
+        WebFacet webFacet = webFacetType == null ? null : findFacet(modelsProvider1.getModifiableFacetModel(module), webFacetType, "Web");
         if (webFacet != null) {
           facet.getConfiguration().setWebFacetName(webFacet.getName());
         }

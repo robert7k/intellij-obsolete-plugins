@@ -1,5 +1,6 @@
 package com.intellij.gwt.inspections;
 
+import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.codeHighlighting.HighlightDisplayLevel;
 import com.intellij.codeInspection.InspectionManager;
 import com.intellij.codeInspection.ProblemDescriptor;
@@ -8,7 +9,6 @@ import com.intellij.gwt.GwtBundle;
 import com.intellij.gwt.uiBinder.UiBinderUtil;
 import com.intellij.gwt.uiBinder.mapping.UiBinderMappingService;
 import com.intellij.java.syntax.parser.JavaKeywords;
-import com.intellij.javaee.model.annotations.AnnotationModelUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.JavaRecursiveElementWalkingVisitor;
@@ -45,7 +45,7 @@ public final class GwtUiFieldAssignmentInspection extends BaseGwtInspection {
             if (modifierList != null) {
               final PsiAnnotation annotation = modifierList.findAnnotation(UiBinderUtil.UI_FIELD_ANNOTATION);
               if (annotation != null) {
-                final Boolean provided = AnnotationModelUtil.getBooleanValue(annotation, UiBinderUtil.PROVIDED_ANNOTATION_ATTRIBUTE, false).getValue();
+                final Boolean provided = AnnotationUtil.getBooleanAttributeValue(annotation, UiBinderUtil.PROVIDED_ANNOTATION_ATTRIBUTE);
                 if (provided == null || !provided) {
                   final String message = GwtBundle.message("inspection.message.assignment.to.uifield.annotated.field.will.be.ignored");
                   final SetProvidedAttributeQuickFix fix = new SetProvidedAttributeQuickFix(annotation);

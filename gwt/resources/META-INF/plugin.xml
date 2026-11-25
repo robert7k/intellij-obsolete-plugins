@@ -21,8 +21,7 @@
     <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="com.intellij.css"/>
     <plugin id="com.intellij.java-i18n"/>
-    <plugin id="com.intellij.javaee.app.servers.integration"/>
-    <plugin id="com.intellij.javaee.web"/>
+    <plugin id="com.intellij.javaee"/>
     <module name="intellij.css.analysis"/>
     <module name="intellij.css.backend"/>
     <module name="intellij.css.common"/>
@@ -45,7 +44,6 @@
     <module name="intellij.javaee.app.servers"/>
     <module name="intellij.javaee.ejb"/>
     <module name="intellij.javaee.platform"/>
-    <module name="intellij.javaee.platform.impl"/>
     <module name="intellij.javaee.web"/>
     <module name="intellij.javascript.analysis.impl"/>
     <module name="intellij.javascript.backend"/>
@@ -55,6 +53,7 @@
     <module name="intellij.javascript.psi.impl"/>
     <module name="intellij.maven"/>
     <module name="intellij.platform.jps.build"/>
+    <module name="intellij.platform.ide.socketConnection"/>
     <module name="intellij.platform.scriptDebugger.backend"/>
     <module name="intellij.platform.webide"/>
     <module name="intellij.properties.backend.psi"/>
@@ -69,6 +68,7 @@
   <content namespace="intellij-gwt">
     <module name="intellij.gwt.spring"/>
     <module name="intellij.gwt.dev"/>
+    <module name="intellij.gwt.javaee"/>
   </content>
 
   <depends optional="true" config-file="gwt-maven-support.xml">org.jetbrains.idea.maven</depends>
@@ -82,6 +82,7 @@
     <extensionPoint name="sdkType" interface="com.intellij.gwt.sdk.GwtSdkType" dynamic="true"/>
     <extensionPoint name="unregisteredServletFilter" interface="com.intellij.openapi.util.Condition" dynamic="true"/>
     <extensionPoint name="compileOutputRelativePathSuggester" interface="com.intellij.gwt.packaging.GwtCompileOutputRelativePathSuggester" dynamic="true"/>
+    <extensionPoint name="sampleApplicationRunConfigurator" interface="com.intellij.gwt.facet.GwtSampleApplicationRunConfigurator" dynamic="true"/>
   </extensionPoints>
 
   <extensions defaultExtensionNs="com.intellij">

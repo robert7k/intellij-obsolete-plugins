@@ -1,0 +1,15 @@
+<!-- Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.-->
+<!--
+  Integration with Java EE application servers. Both plugins below require an IntelliJ IDEA Ultimate subscription;
+  without them this content module is simply not loaded and the rest of the GWT plugin keeps working.
+-->
+<idea-plugin>
+  <dependencies>
+    <plugin id="com.intellij.javaee.app.servers.integration"/>
+    <plugin id="com.intellij.javaee.web"/>
+  </dependencies>
+
+  <extensions defaultExtensionNs="com.intellij.gwt">
+    <sampleApplicationRunConfigurator implementation="com.intellij.gwt.javaee.GwtJavaeeSampleApplicationRunConfigurator"/>
+  </extensions>
+</idea-plugin>

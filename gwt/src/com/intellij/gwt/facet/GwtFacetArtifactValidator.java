@@ -10,6 +10,7 @@ import com.intellij.gwt.packaging.GwtCompileOutputRelativePathSuggester;
 import com.intellij.gwt.packaging.GwtCompilerOutputElement;
 import com.intellij.gwt.packaging.GwtCompilerOutputElementType;
 import com.intellij.gwt.rpc.GwtServletUtil;
+import com.intellij.gwt.web.GwtWebUtil;
 import com.intellij.gwt.sdk.GwtSdk;
 import com.intellij.javaee.artifact.JavaeeArtifactUtil;
 import com.intellij.javaee.web.artifact.WebArtifactUtil;
@@ -61,7 +62,8 @@ public class GwtFacetArtifactValidator extends FacetEditorValidator {
       if (!ArtifactUtil.processPackagingElements(artifact, GwtCompilerOutputElementType.getInstance(),
                                                  element -> !myFacet.equals(element.getFacet()), artifactsContext, false)) {
         final ArtifactType artifactType = artifact.getArtifactType();
-        if (WebArtifactUtil.getInstance().isWebApplication(artifactType) && !containsServletJar(artifactsContext, artifact, artifactType)
+        final WebArtifactUtil webArtifactUtil = GwtWebUtil.getWebArtifactUtil();
+        if (webArtifactUtil != null && webArtifactUtil.isWebApplication(artifactType) && !containsServletJar(artifactsContext, artifact, artifactType)
             && GwtServletUtil.hasServlets(myFacet)) {
           return new ValidationResult(
             GwtBundle.message("validation.result.gwt.servlet.jar.is.not.included.in.0.artifact", artifact.getName()),
@@ -158,18 +160,23 @@ public class GwtFacetArtifactValidator extends FacetEditorValidator {
   }
 
   private Collection<? extends Artifact> getSuitableArtifacts(ArtifactsStructureConfigurableContext artifactsContext) {
+    final WebArtifactUtil webArtifactUtil = GwtWebUtil.getWebArtifactUtil();
+    if (webArtifactUtil == null) {
+      // without the JavaEE Web plugin there are no web artifact types; a plain artifact can still be created
+      return List.of();
+    }
     final String webFacetName = myGwtFacetEditor.getSelectedWebFacet();
     if (webFacetName != null) {
       final WebFacet webFacet = artifactsContext.getModulesProvider().getFacetModel(myFacet.getModule()).findFacet(WebFacet.ID, webFacetName);
       if (webFacet != null) {
         final Collection<Artifact> artifacts = JavaeeArtifactUtil.getInstance().getArtifactsContainingFacet(webFacet, artifactsContext,
-                                                                                                            WebArtifactUtil.getInstance().getWebArtifactTypes(), false);
+                                                                                                            webArtifactUtil.getWebArtifactTypes(), false);
         if (!artifacts.isEmpty()) {
           return artifacts;
         }
       }
     }
-    return artifactsContext.getArtifactModel().getArtifactsByType(WebArtifactUtil.getInstance().getExplodedWarArtifactType());
+    return artifactsContext.getArtifactModel().getArtifactsByType(webArtifactUtil.getExplodedWarArtifactType());
   }
 
   private class MySelectArtifactPopupStep extends BaseListPopupStep<Artifact> {

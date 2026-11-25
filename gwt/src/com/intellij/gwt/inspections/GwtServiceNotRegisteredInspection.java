@@ -216,7 +216,7 @@ public final class GwtServiceNotRegisteredInspection extends BaseGwtInspection {
     String serviceName = service.getName();
     final WebFacet webFacet = facet.getWebFacet();
     if (webFacet == null) {
-      if (!facet.getSdkVersion().isHostedModeRequiresWebXml()) {
+      if (!facet.getSdkVersion().isHostedModeRequiresWebXml() || !GwtWebUtil.isWebFacetTypeAvailable()) {
         return null;
       }
 
@@ -276,6 +276,7 @@ public final class GwtServiceNotRegisteredInspection extends BaseGwtInspection {
       final VirtualFile root = findContentRoot();
       LOG.assertTrue(root != null, myGwtModule.getModuleFile());
       final WebFacet webFacet = GwtWebUtil.createWebFacet(myFacet, root);
+      if (webFacet == null) return;
 
       final WebApp webApp = webFacet.getRoot();
       LOG.assertTrue(webApp != null);

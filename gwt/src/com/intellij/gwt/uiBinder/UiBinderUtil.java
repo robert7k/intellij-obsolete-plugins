@@ -1,6 +1,6 @@
 package com.intellij.gwt.uiBinder;
 
-import com.intellij.javaee.model.annotations.AnnotationModelUtil;
+import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.util.text.StringUtil;
@@ -119,7 +119,7 @@ public final class UiBinderUtil {
     if (modifierList == null) return false;
     final PsiAnnotation annotation = modifierList.findAnnotation(UI_FIELD_ANNOTATION);
     if (annotation == null) return false;
-    final Boolean value = AnnotationModelUtil.getBooleanValue(annotation, PROVIDED_ANNOTATION_ATTRIBUTE, false).getValue();
+    final Boolean value = AnnotationUtil.getBooleanAttributeValue(annotation, PROVIDED_ANNOTATION_ATTRIBUTE);
     return Boolean.TRUE.equals(value);
   }
 

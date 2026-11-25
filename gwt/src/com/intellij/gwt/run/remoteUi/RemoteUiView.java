@@ -1,5 +1,6 @@
 package com.intellij.gwt.run.remoteUi;
 
+import com.intellij.execution.console.ConsoleViewWrapperBase;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.runners.RunContentBuilder;
 import com.intellij.execution.ui.ConsoleView;
@@ -13,7 +14,6 @@ import com.intellij.gwt.run.remoteUi.responses.RemoteUiResponse;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.browsers.OpenUrlHyperlinkInfo;
 import com.intellij.ide.browsers.WebBrowser;
-import com.intellij.javaee.appServers.run.execution.ConsoleViewWrapper;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.util.Disposer;
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public final class RemoteUiView extends ConsoleViewWrapper {
+public final class RemoteUiView extends ConsoleViewWrapperBase {
   private final ConsoleView myServerConsole;
   private final ModuleLogComponent myModuleLogComponent;
   private final RemoteUiConnection myUiConnection;

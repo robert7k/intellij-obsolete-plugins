@@ -2,29 +2,20 @@ package com.intellij.gwt.facet;
 
 import com.intellij.CommonBundle;
 import com.intellij.execution.RunManager;
-import com.intellij.execution.compound.CompoundRunConfiguration;
-import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.gwt.GwtBundle;
 import com.intellij.gwt.module.GwtModulesManager;
 import com.intellij.gwt.module.model.GwtModule;
 import com.intellij.gwt.packaging.GwtCompileOutputRelativePathSuggester;
-import com.intellij.gwt.packaging.GwtCompilerOutputElement;
 import com.intellij.gwt.rpc.GwtServletUtil;
 import com.intellij.gwt.run.GwtRunConfiguration;
 import com.intellij.gwt.sdk.GwtVersion;
 import com.intellij.gwt.templates.GwtTemplates;
 import com.intellij.gwt.web.GwtWebUtil;
 import com.intellij.ide.util.frameworkSupport.FrameworkSupportModel;
-import com.intellij.javaee.JavaeeUtil;
-import com.intellij.javaee.appServers.deployment.DeploymentSettings;
-import com.intellij.javaee.appServers.run.configuration.CommonStrategy;
-import com.intellij.javaee.artifact.JavaeeArtifactUtil;
-import com.intellij.javaee.facet.JavaeeFacetType;
 import com.intellij.javaee.web.WebRoot;
 import com.intellij.javaee.web.facet.WebFacet;
 import com.intellij.javaee.web.model.xml.WebApp;
 import com.intellij.openapi.application.WriteAction;
-import com.intellij.openapi.deployment.DeploymentUtil;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.DumbService;
@@ -34,15 +25,10 @@ import com.intellij.openapi.roots.ModuleRootModel;
 import com.intellij.openapi.roots.SourceFolder;
 import com.intellij.openapi.startup.StartupManager;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.io.StreamUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.packaging.artifacts.Artifact;
-import com.intellij.packaging.artifacts.ArtifactManager;
-import com.intellij.packaging.artifacts.ArtifactType;
-import com.intellij.packaging.elements.PackagingElementFactory;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
@@ -58,12 +44,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.intellij.gwt.facet.GwtFacetFrameworkSupportProvider.addServletJarToArtifact;
 import static com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction;
 import static com.intellij.openapi.util.text.StringUtil.decapitalize;
 import static com.intellij.openapi.util.text.StringUtil.getPackageName;
@@ -72,7 +56,6 @@ import static com.intellij.openapi.util.text.StringUtil.getShortName;
 import static com.intellij.openapi.util.text.StringUtil.replace;
 import static com.intellij.openapi.util.text.StringUtil.split;
 import static com.intellij.openapi.util.text.StringUtil.trimEnd;
-import static com.intellij.packaging.impl.run.BuildArtifactsBeforeRunTaskProvider.setBuildArtifactBeforeRun;
 
 public class GwtSampleApplicationCreator {
   private static final Logger LOG = Logger.getInstance(GwtSampleApplicationCreator.class);
@@ -152,83 +135,16 @@ public class GwtSampleApplicationCreator {
         webFacet = GwtWebUtil.createWebFacet(myFacet, finalContentRoot);
       }
 
-      CommonStrategy javaEeConfiguration = null;
-      for (RunConfiguration configuration : RunManager.getInstance(project).getAllConfigurationsList()) {
-        if (configuration instanceof CommonStrategy) {
-          javaEeConfiguration = (CommonStrategy)configuration;
-        }
-      }
-
       RunManager runManager = RunManager.getInstance(project);
       GwtRunConfiguration gwtRunConfiguration = ContainerUtil.findInstance(runManager.getAllConfigurationsList(), GwtRunConfiguration.class);
-      if (javaEeConfiguration != null) {
-        ArtifactManager artifactManager = ArtifactManager.getInstance(project);
-        String webFacetName = webFacet == null ? null : webFacet.getName();
-        String artifactName = JavaeeUtil.suggestArtifactName(myModule.getName(), webFacetName, WebFacet.ID);
-
-        DeploymentSettings javaEeDeploymentSettings = javaEeConfiguration.getDeploymentSettings();
-        if (javaEeDeploymentSettings != null) {
-          Artifact warExplodedArtifact = createNewArtifact(project, webFacet, artifactManager, artifactName, true);
-          javaEeDeploymentSettings.getOrCreateModel(warExplodedArtifact);
-          setBuildArtifactBeforeRun(project, javaEeConfiguration, warExplodedArtifact);
-        }
-        //we need to call javaEeConfiguration.getUrlToOpenInBrowser() after deployment settings are updated to ensure that context root is added to the URL
-        javaEeConfiguration.setUrlToOpenInBrowser(DeploymentUtil.appendToPath(javaEeConfiguration.getUrlToOpenInBrowser(), gwtRunConfiguration.getPage()));
-
-        CommonStrategy javaEeDevMode = javaEeConfiguration.clone();
-        javaEeDevMode.getSettingsBean().OPEN_IN_BROWSER = false;
-        javaEeDevMode.setName(javaEeConfiguration.getName() + " DevMode");
-
-        runManager.addConfiguration(runManager.createConfiguration(javaEeDevMode, javaEeConfiguration.getFactory()));
-
-        DeploymentSettings javaEeDevModeDeploymentSettings = javaEeDevMode.getDeploymentSettings();
-        Artifact warExplodedDevModeArtifact = createNewArtifact(project, webFacet, artifactManager,
-                                                                artifactName + " DevMode", false);
-        if (javaEeDevModeDeploymentSettings != null) {
-          javaEeDevModeDeploymentSettings.getOrCreateModel(warExplodedDevModeArtifact);
-
-          GwtRunConfiguration noServerConfiguration = (GwtRunConfiguration)gwtRunConfiguration.clone();
-
-          noServerConfiguration.setName(gwtRunConfiguration.getName() + " NoServer");
-          @NonNls String programParameters = gwtRunConfiguration.getProgramParameters()
-                                             + " -noserver"
-                                             + " -port " + javaEeDevMode.getPort()
-                                             + " -war " + warExplodedDevModeArtifact.getOutputPath();
-          noServerConfiguration.setProgramParameters(programParameters);
-
-          runManager.addConfiguration(runManager.createConfiguration(noServerConfiguration, gwtRunConfiguration.getFactory()));
-          setBuildArtifactBeforeRun(project, noServerConfiguration, warExplodedDevModeArtifact);
-          setBuildArtifactBeforeRun(project, javaEeDevMode, warExplodedDevModeArtifact);
-
-          CompoundRunConfiguration compoundRunConfiguration = new CompoundRunConfiguration(
-            noServerConfiguration.getName() + " with " + javaEeDevMode.getName(), project);
-          compoundRunConfiguration.setConfigurationsWithoutTargets(Arrays.asList(noServerConfiguration, javaEeDevMode));
-          runManager.addConfiguration(runManager.createConfiguration(compoundRunConfiguration, compoundRunConfiguration.getFactory()));
+      if (gwtRunConfiguration != null) {
+        String relativePath = GwtCompileOutputRelativePathSuggester.suggestRelativeOutputPath(myFrameworkSupportModel);
+        for (GwtSampleApplicationRunConfigurator configurator : GwtSampleApplicationRunConfigurator.EP_NAME.getExtensionList()) {
+          configurator.configure(myFacet, webFacet, gwtRunConfiguration, relativePath);
         }
       }
       generateFiles(finalContentRoot, finalJavaDirectory, gwtVersion);
     }));
-  }
-
-  private @NotNull Artifact createNewArtifact(Project project, WebFacet webFacet, ArtifactManager artifactManager,
-                                              @NlsSafe String artifactName, boolean includeGwtOutput) {
-    ArtifactType explodedArtifactType = ((JavaeeFacetType<?, ?>)webFacet.getType()).getExplodedArtifactType();
-    Artifact artifact = artifactManager.addArtifact(artifactName, explodedArtifactType, null);
-
-    artifactManager.addElementsToDirectory(artifact, "WEB-INF/classes",
-                                           PackagingElementFactory.getInstance().createModuleOutput(myModule));
-
-    String relativePath = GwtCompileOutputRelativePathSuggester.suggestRelativeOutputPath(myFrameworkSupportModel);
-    if (includeGwtOutput) {
-      artifactManager.addElementsToDirectory(artifact, relativePath, new GwtCompilerOutputElement(project, myFacet));
-    }
-
-    addServletJarToArtifact(artifactManager, artifact, myFacet.getConfiguration().getSdk());
-
-    JavaeeArtifactUtil javaeeArtifactUtil = JavaeeArtifactUtil.getInstance();
-    artifactManager.addElementsToDirectory(artifact, relativePath, javaeeArtifactUtil.createFacetResourcesElement(webFacet));
-
-    return artifact;
   }
 
   private static @NotNull VirtualFile getOrCreateContentRoot(ContentEntry contentEntry) throws IOException {
@@ -289,14 +205,19 @@ public class GwtSampleApplicationCreator {
           relativePath = templatePath.substring(i + WAR_STRING.length());
           LOG.assertTrue(i != -1, "incorrect template path: " + templatePath);
           final WebFacet webFacet = myFacet.getWebFacet();
-          LOG.assertTrue(webFacet != null);
-          final List<WebRoot> webRoots = webFacet.getWebRoots();
-          if (webRoots.isEmpty()) {
-            parent = findOrCreateChildDirectory(contentRoot, "web");
-            webFacet.addWebRoot(parent, "/");
+          if (webFacet == null) {
+            // no Web facet (e.g. the Ultimate-only JavaEE Web plugin is not available): use the default GWT project layout
+            parent = findOrCreateChildDirectory(contentRoot, GwtWebUtil.DEFAULT_WAR_DIRECTORY_NAME);
           }
           else {
-            parent = webRoots.get(0).getFile();
+            final List<WebRoot> webRoots = webFacet.getWebRoots();
+            if (webRoots.isEmpty()) {
+              parent = findOrCreateChildDirectory(contentRoot, "web");
+              webFacet.addWebRoot(parent, "/");
+            }
+            else {
+              parent = webRoots.get(0).getFile();
+            }
           }
         }
 
@@ -327,9 +248,10 @@ public class GwtSampleApplicationCreator {
       }
     }
 
-    if (myFacet.getSdkVersion().isHostedModeRequiresWebXml()) {
+    final WebFacet webFacet = myFacet.getWebFacet();
+    if (myFacet.getSdkVersion().isHostedModeRequiresWebXml() && webFacet != null) {
       final String urlPattern = "/" + myAppName + "/" + serviceName;
-      final WebApp root = myFacet.getWebFacet().getRoot();
+      final WebApp root = webFacet.getRoot();
       if (root != null) {
         GwtModule finalGwtModule = gwtModule;
         PsiClass finalServletImpl = servletImpl;

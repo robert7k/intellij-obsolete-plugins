@@ -35,7 +35,6 @@ import com.intellij.ide.browsers.JavaScriptDebuggerStarter;
 import com.intellij.ide.browsers.WebBrowserManager;
 import com.intellij.ide.highlighter.HtmlFileType;
 import com.intellij.javaee.constants.JavaeeCommonConstants;
-import com.intellij.javaee.ui.packaging.ExplodedWarArtifactType;
 import com.intellij.javaee.web.facet.WebFacet;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
@@ -110,6 +109,8 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 public final class GwtRunConfigurationEditor extends SettingsEditor<GwtRunConfiguration> implements PanelWithAnchor {
+  // id of com.intellij.javaee.ui.packaging.ExplodedWarArtifactType, which lives in an Ultimate-only module
+  private static final @NonNls String EXPLODED_WAR_ARTIFACT_TYPE_ID = "exploded-war";
   private static final Comparator<List<String>> MODULES_LIST_COMPARATOR = (o1, o2) -> {
     if (o1.size() > o2.size()) return -1;
     if (o1.size() < o2.size()) return 1;
@@ -527,7 +528,7 @@ public final class GwtRunConfigurationEditor extends SettingsEditor<GwtRunConfig
               BuildArtifactsBeforeRunTask task = (BuildArtifactsBeforeRunTask)beforeRunTask;
               for (ArtifactPointer pointer : task.getArtifactPointers()) {
                 Artifact artifact = pointer.getArtifact();
-                if (artifact != null && artifact.getArtifactType() instanceof ExplodedWarArtifactType) {
+                if (artifact != null && EXPLODED_WAR_ARTIFACT_TYPE_ID.equals(artifact.getArtifactType().getId())) {
                   artifacts.add(artifact);
                 }
               }

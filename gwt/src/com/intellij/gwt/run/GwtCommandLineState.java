@@ -46,6 +46,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.browsers.WebBrowserManager;
 import com.intellij.jarRepository.JarRepositoryManager;
 import com.intellij.javaee.artifact.JavaeeArtifactUtil;
+import com.intellij.gwt.web.GwtWebUtil;
 import com.intellij.javaee.web.WebRoot;
 import com.intellij.javaee.web.artifact.WebArtifactUtil;
 import com.intellij.javaee.web.facet.WebFacet;
@@ -511,8 +512,16 @@ public final class GwtCommandLineState extends JavaCommandLineStateEx {
     if (!myFacetModule.equals(myModule)) {
       enumerators.add(OrderEnumerator.orderEntries(myModule).withoutSdk().productionOnly().runtimeOnly().recursively());
     }
+    final boolean webFacetTypeAvailable = GwtWebUtil.isWebFacetTypeAvailable();
     for (OrderEnumerator enumerator : enumerators) {
       enumerator.forEachModule(module -> {
+        if (!webFacetTypeAvailable) {
+          // no Web facets without the (Ultimate-only) JavaEE Web plugin: fall back to the conventional web directories
+          for (VirtualFile dir : GwtWebUtil.findDefaultWebRoots(module)) {
+            generator.addFile(dir, "/");
+          }
+          return true;
+        }
         GwtFacet facet = GwtFacet.getInstance(module);
         if (facet != null) {
           ContainerUtil.addIfNotNull(webFacets, facet.getWebFacet());
