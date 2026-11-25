@@ -7,7 +7,7 @@ Navigation map for coding agents working on the IntelliJ **GWT (Google Web Toolk
 
 ## 1. Orientation
 
-The plugin adds GWT support to IntelliJ IDEA Ultimate: `*.gwt.xml` module model, UiBinder
+The plugin adds GWT support to IntelliJ IDEA: `*.gwt.xml` module model, UiBinder
 (`*.ui.xml`), JSNI, RPC async services, ClientBundle/CSS, i18n, run/dev-mode, and GWT compilation.
 
 Two things to know before editing anything:

@@ -25,13 +25,13 @@ dependencies {
         intellijIdea(properties("platformVersion"))
 
         // hard dependencies (see resources/META-INF/plugin.xml <dependencies>)
-        bundledPlugin("com.intellij.modules.ultimate")
-        bundledPlugin("com.intellij.modules.idea.ultimate")
         bundledPlugin("JavaScript")
         bundledPlugin("com.intellij.css")
         bundledPlugin("com.intellij.java-i18n")
         bundledPlugin("com.intellij.javaee.app.servers.integration")
         bundledPlugin("com.intellij.javaee.web")
+        // org.jetbrains.debugger.sourcemap.* (was only reachable via com.intellij.modules.ultimate before)
+        bundledModule("intellij.platform.scriptDebugger.backend")
 
         // optional dependencies
         bundledPlugin("org.jetbrains.idea.maven")

@@ -17,8 +17,6 @@
   <resource-bundle>messages.GwtBundle</resource-bundle>
 
   <dependencies>
-    <plugin id="com.intellij.modules.ultimate"/>
-    <plugin id="com.intellij.modules.idea.ultimate"/>
     <plugin id="JavaScript"/>
     <!-- region Generated dependencies - run `Generate Product Layouts` to regenerate -->
     <plugin id="com.intellij.css"/>
