@@ -12,6 +12,7 @@ import com.intellij.psi.CommonClassNames;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDirectory;
+import com.intellij.psi.PsiElementFinder;
 import com.intellij.psi.PsiPackage;
 import com.intellij.psi.search.GlobalSearchScope;
 
@@ -40,7 +41,9 @@ public class GwtSuperSourceElementFinderTest extends GwtTestCase {
     final GwtModule gwtModule = assertOneElement(
       GwtModulesManager.getInstance(myProject).findGwtModulesByQualifiedName("ppp.MyModule", GlobalSearchScope.projectScope(myProject)));
     WriteCommandAction.runWriteCommandAction(myProject, () -> assertOneElement(gwtModule.getSuperSources()).undefine());
-    assertNull(findXxxPackage());
+    // Query the GWT finder directly: since 2026.3 the platform's DeclaredPackageElementFinder also reports
+    // packages that are only declared by a 'package' statement, so JavaPsiFacade still finds "xxx" here.
+    assertNull(PsiElementFinder.EP.findExtensionOrFail(GwtSuperSourceElementFinder.class, myProject).findPackage("xxx"));
 
     WriteCommandAction.runWriteCommandAction(myProject, () -> gwtModule.addSuperSource().getPath().setValue("sup"));
     PsiDirectory directory = assertOneElement(findXxxPackage().getDirectories(GlobalSearchScope.projectScope(myProject)));

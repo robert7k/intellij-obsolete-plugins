@@ -29,6 +29,7 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess;
 import com.intellij.openapi.vfs.VirtualFileFilter;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -44,6 +45,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 public abstract class GwtTestCase extends JavaPsiTestCase {
+
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    // Since 2026.3 the test framework no longer grants VFS access to the plugin's testData directory implicitly.
+    VfsRootAccess.allowRootAccess(getTestRootDisposable(), getGwtTestDataPath());
+  }
   @NonNls private static final String MOCK_GWT_USER_JAR_NAME = "gwt-user.jar";
 
   @NotNull

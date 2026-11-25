@@ -5,6 +5,7 @@ import com.intellij.gwt.GwtTestCase;
 import com.intellij.gwt.inspections.eventListeners.GwtDeprecatedEventListenersInspection;
 import com.intellij.gwt.sdk.impl.GwtVersionImpl;
 import com.intellij.openapi.application.WriteAction;
+import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess;
 import com.intellij.testFramework.builders.JavaModuleFixtureBuilder;
 import com.intellij.testFramework.fixtures.JavaCodeInsightFixtureTestCase;
 import com.intellij.util.containers.ContainerUtil;
@@ -12,6 +13,13 @@ import com.intellij.util.containers.ContainerUtil;
 import java.util.List;
 
 public class GwtDeprecatedListenersQuickFixTest extends JavaCodeInsightFixtureTestCase {
+
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    // Since 2026.3 the test framework no longer grants VFS access to the plugin's testData directory implicitly.
+    VfsRootAccess.allowRootAccess(getTestRootDisposable(), GwtTestCase.getGwtTestDataPath());
+  }
   public void testAddAnonymousListener() { doTest(); }
   public void testListenerAssignedToLocal() { doTest(); }
   public void testListenerAssignedToField() { doTest(); }
