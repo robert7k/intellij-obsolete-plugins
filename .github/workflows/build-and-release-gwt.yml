@@ -1,37 +1,166 @@
 # Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+#
+# Builds the GWT plugin on every push / pull request that touches gwt/ and attaches the installable plugin ZIP
+# to the workflow run ("Artifacts" section of the run page; install it via Settings | Plugins | Install Plugin from Disk).
+#
+# Running the workflow manually (Actions | Build and Release GWT | Run workflow) can additionally create a GitHub
+# release "gwt-v<pluginVersion>" with the ZIP attached. Releases from a branch other than the default branch are
+# marked as pre-releases.
 name: Build and Release GWT
 
 on:
+  push:
+    paths:
+      - 'gwt/**'
+      - '.github/workflows/build-and-release-gwt.yml'
+  pull_request:
+    paths:
+      - 'gwt/**'
+      - '.github/workflows/build-and-release-gwt.yml'
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Create a GitHub release with the plugin ZIP'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: gwt
 
 jobs:
-  build-and-release:
+  build:
+    name: Build plugin
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      zip: ${{ steps.version.outputs.zip }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      # gwt/build.gradle.kts uses a Java 25 toolchain (required by IntelliJ IDEA 2026.x)
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
 
-      - name: Build with Gradle
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build plugin
         run: ./gradlew buildPlugin
-        working-directory: gwt
 
-      - name: Read version from gradle.properties
+      - name: Determine version and ZIP
         id: version
         run: |
-          VERSION=$(grep '^pluginVersion\s*=' gradle.properties | sed 's/pluginVersion\s*=\s*\(.*\)/\1/')
+          VERSION=$(grep -E '^pluginVersion\s*=' gradle.properties | sed -E 's/pluginVersion\s*=\s*//')
+          ZIP=$(ls build/distributions/*.zip)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-        working-directory: gwt
+          echo "zip=$(basename "$ZIP")" >> "$GITHUB_OUTPUT"
+          echo "path=gwt/$ZIP" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      # archive: false uploads the plugin ZIP as-is, so the downloaded file can be installed directly
+      - name: Upload plugin ZIP
+        uses: actions/upload-artifact@v7
         with:
-          tag_name: gwt-v${{ steps.version.outputs.version }}
-          name: GWT v${{ steps.version.outputs.version }}
-          files: gwt/build/distributions/*.zip
+          path: ${{ steps.version.outputs.path }}
+          archive: false
+          if-no-files-found: error
+
+  verify:
+    name: Plugin Verifier
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # fails only on compatibility problems, see pluginVerification in gwt/build.gradle.kts
+      - name: Verify plugin against the target IDE
+        run: ./gradlew verifyPlugin
+
+      - name: Upload verifier report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugin-verifier-report
+          path: gwt/build/reports/pluginVerifier
+          if-no-files-found: ignore
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: build
+    # 8 tests also fail on the 2026.2 baseline and are not fixed yet; report them without blocking the build
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Run tests
+        run: ./gradlew test --continue
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: gwt/build/reports/tests/test
+          if-no-files-found: ignore
+
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs: [build, verify]
+    if: github.event_name == 'workflow_dispatch' && inputs.release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download plugin ZIP
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.zip }}
+          path: dist
+          skip-decompress: true
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: gwt-v${{ needs.build.outputs.version }}
+          name: GWT v${{ needs.build.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ github.ref_name != github.event.repository.default_branch }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist/*.zip

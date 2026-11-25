@@ -1,5 +1,7 @@
 // Copyright 2000-2026 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 
 fun properties(key: String) = project.findProperty(key).toString()
@@ -97,6 +99,15 @@ java.sourceSets["test"].java {
 }
 
 intellijPlatform {
+    // ./gradlew verifyPlugin: run the JetBrains Plugin Verifier against the target IDE. Only real compatibility
+    // problems fail the build; the (inherited) usages of internal/experimental API are reported as warnings.
+    pluginVerification {
+        ides {
+            create(IntelliJPlatformType.IntellijIdea, properties("platformVersion"))
+        }
+        failureLevel = listOf(FailureLevel.COMPATIBILITY_PROBLEMS, FailureLevel.INVALID_PLUGIN)
+    }
+
     // GUI Designer form code is inlined in the dialog constructors (bound fields are final),
     // so bytecode form instrumentation is neither needed nor compatible.
     instrumentCode = false
